@@ -1,0 +1,395 @@
+FORTIGATE - REMOTE ACCESS VPN
+=============================
+
+EQUIPO
+
+Nombre:
+FGT-USER
+
+
+INTERFACES
+==========
+
+port1 - WAN
+
+IP:
+198.51.100.98/30
+
+Gateway:
+198.51.100.97
+
+
+port2 - WEB-LAN
+
+IP:
+10.24.96.129/28
+
+Funcion:
+Gateway de la red del servidor WEB.
+
+
+port3 - MGMT
+
+IP:
+192.168.178.2/24
+
+Funcion:
+Administracion del FortiGate.
+
+
+RED DEL SERVIDOR
+================
+
+Red:
+10.24.96.128/28
+
+Gateway:
+10.24.96.129
+
+WEB-SERVER:
+10.24.96.130
+
+
+OBJETOS DE DIRECCIONES
+======================
+
+WEB-NET
+
+Red:
+10.24.96.128/28
+
+
+WEB-SERVER-HOST
+
+IP:
+10.24.96.130/32
+
+
+VPN-CLIENT-POOL
+
+Rango:
+10.24.97.10 - 10.24.97.20
+
+
+USUARIO DE VPN
+==============
+
+Usuario:
+vpnuser
+
+Grupo:
+VPN-USERS
+
+La contraseña del usuario VPN no se publica en este repositorio.
+
+
+VPN REMOTE ACCESS IPSEC
+=======================
+
+Nombre:
+REMOTE-SSH
+
+Interfaz:
+port1
+
+Tipo:
+Dynamic / Dial-Up
+
+IKE Version:
+IKEv1
+
+Mode:
+Main Mode
+
+Mode Config:
+Enabled
+
+XAuth:
+Enabled
+
+Grupo autorizado:
+VPN-USERS
+
+Pool de clientes:
+VPN-CLIENT-POOL
+
+Red incluida:
+WEB-NET
+
+Encryption:
+DES
+
+Authentication:
+SHA256
+
+DH Group:
+14
+
+NAT-T:
+Enabled cuando es necesario
+
+Pre-Shared Key:
+<IPSEC_PSK_REDACTED>
+
+
+PHASE 2
+=======
+
+Nombre:
+REMOTE-SSH-P2
+
+Phase 1:
+REMOTE-SSH
+
+Proposal:
+DES-SHA256
+
+PFS:
+Disabled
+
+Keepalive:
+Enabled
+
+Los selectores de Phase 2 son dinamicos para permitir
+la conexion de los clientes Remote Access.
+
+
+HTTPS SIN VPN
+=============
+
+Se configuró un Virtual IP para permitir acceso HTTPS
+al servidor sin necesidad de conectarse a la VPN.
+
+Nombre:
+VIP_HTTPS_WEB
+
+IP Publica:
+198.51.100.98
+
+Puerto externo:
+443
+
+IP interna:
+10.24.96.130
+
+Puerto interno:
+443
+
+Protocolo:
+TCP
+
+
+POLITICA HTTPS
+==============
+
+Nombre:
+WAN_TO_WEB_HTTPS
+
+Origen:
+port1 / Internet
+
+Destino:
+port2 / WEB-LAN
+
+Destino NAT:
+VIP_HTTPS_WEB
+
+Servicio:
+HTTPS
+
+Puerto:
+443
+
+NAT:
+Disabled
+
+Resultado:
+
+El usuario puede acceder al servidor WEB mediante:
+
+https://198.51.100.98
+
+sin necesidad de conectarse a la VPN.
+
+
+POLITICA SSH MEDIANTE VPN
+=========================
+
+Nombre:
+VPN_TO_WEB_SSH
+
+Origen:
+REMOTE-SSH
+
+Destino:
+port2 / WEB-LAN
+
+Source Address:
+VPN-CLIENT-POOL
+
+Destination Address:
+WEB-SERVER-HOST
+
+Servicio:
+SSH
+
+Puerto:
+22
+
+NAT:
+Disabled
+
+
+Esta politica permite que los clientes conectados a la
+VPN Remote Access puedan acceder mediante SSH al servidor:
+
+10.24.96.130
+
+
+POLITICA DE INTERNET DEL SERVIDOR
+=================================
+
+Nombre:
+WEB_TO_INTERNET
+
+Origen:
+port2 / WEB-LAN
+
+Destino:
+port1 / WAN
+
+Servicio:
+ALL
+
+NAT:
+Enabled
+
+Esta politica permite al WEB-SERVER tener salida a Internet.
+
+
+FUNCIONAMIENTO GENERAL
+======================
+
+SIN VPN
+-------
+
+HTTPS:
+FUNCIONA
+
+Destino:
+https://198.51.100.98
+
+SSH:
+NO DISPONIBLE hacia la direccion privada del servidor.
+
+
+CON VPN
+-------
+
+El USER-PC se conecta al FortiGate mediante Remote Access IPsec.
+
+El cliente recibe una IP virtual del rango:
+
+10.24.97.10 - 10.24.97.20
+
+Durante las pruebas el cliente recibio:
+
+10.24.97.10
+
+
+Una vez conectado a la VPN puede acceder al servidor mediante:
+
+ssh sshuser@10.24.96.130
+
+
+RESULTADO FINAL
+===============
+
+HTTPS SIN VPN:
+FUNCIONA
+
+SSH SIN VPN:
+NO FUNCIONA
+
+VPN REMOTE ACCESS:
+FUNCIONA
+
+SSH CON VPN:
+FUNCIONA
+
+
+COMANDOS PRINCIPALES DE REFERENCIA
+==================================
+
+config system interface
+edit "port2"
+set alias "WEB-LAN"
+set ip 10.24.96.129 255.255.255.240
+set allowaccess ping
+set role lan
+next
+end
+
+
+config firewall address
+edit "WEB-NET"
+set subnet 10.24.96.128 255.255.255.240
+next
+
+edit "WEB-SERVER-HOST"
+set subnet 10.24.96.130 255.255.255.255
+next
+
+edit "VPN-CLIENT-POOL"
+set type iprange
+set start-ip 10.24.97.10
+set end-ip 10.24.97.20
+next
+end
+
+
+config user local
+edit "vpnuser"
+set type password
+set passwd <VPN_USER_PASSWORD_REDACTED>
+next
+end
+
+
+config user group
+edit "VPN-USERS"
+set member "vpnuser"
+next
+end
+
+
+config vpn ipsec phase1-interface
+edit "REMOTE-SSH"
+set type dynamic
+set interface "port1"
+set ike-version 1
+set mode main
+set peertype any
+set net-device disable
+set mode-cfg enable
+set proposal des-sha256
+set dhgrp 14
+set dpd on-idle
+set xauthtype auto
+set authusrgrp "VPN-USERS"
+set assign-ip-from name
+set ipv4-name "VPN-CLIENT-POOL"
+set ipv4-split-include "WEB-NET"
+set psksecret <IPSEC_PSK_REDACTED>
+next
+end
+
+
+config vpn ipsec phase2-interface
+edit "REMOTE-SSH-P2"
+set phase1name "REMOTE-SSH"
+set proposal des-sha256
+set pfs disable
+set keepalive enable
+next
+end
