@@ -1,0 +1,223 @@
+COMANDOS DE PRUEBA DEL LABORATORIO
+==================================
+
+
+1. VERIFICAR IP DEL USER-PC
+===========================
+
+ip addr show eth0
+
+Durante las pruebas el USER-PC obtuvo una IP por DHCP
+dentro de la red:
+
+10.24.96.0/25
+
+Ejemplo:
+
+10.24.96.11/25
+
+
+2. VERIFICAR GATEWAY DEL USER-PC
+================================
+
+ping -c 4 10.24.96.1
+
+Resultado esperado:
+
+4 packets transmitted
+4 packets received
+0% packet loss
+
+
+3. PROBAR HTTPS SIN VPN
+=======================
+
+La VPN debe estar desconectada.
+
+Ejecutar:
+
+curl -k https://198.51.100.98/
+
+Resultado esperado:
+
+WEB SERVER - Laboratorio FortiGate
+
+Servidor HTTPS funcionando correctamente.
+
+IP: 10.24.96.130
+
+
+4. LEVANTAR VPN REMOTE ACCESS
+=============================
+
+ipsec up REMOTE-SSH
+
+Resultado esperado al finalizar:
+
+XAuth authentication of 'vpnuser' successful
+
+installing new virtual IP 10.24.97.10
+
+CHILD_SA REMOTE-SSH established
+
+connection 'REMOTE-SSH' established successfully
+
+
+5. VERIFICAR ESTADO DE LA VPN
+=============================
+
+ipsec statusall
+
+La conexión REMOTE-SSH debe aparecer establecida.
+
+Durante el laboratorio el USER-PC recibió la IP virtual:
+
+10.24.97.10
+
+
+6. ACCESO SSH CON VPN
+=====================
+
+Con la VPN activa ejecutar:
+
+ssh sshuser@10.24.96.130
+
+Resultado esperado:
+
+Acceso exitoso al WEB-SERVER.
+
+Prompt esperado:
+
+WEB-SERVER:~$
+
+
+7. TRACEROUTE HACIA EL SERVIDOR
+===============================
+
+Con la VPN activa ejecutar:
+
+traceroute 10.24.96.130
+
+Esta prueba permite comprobar la ruta hacia el servidor
+a través de la VPN Remote Access.
+
+
+8. DESCONECTAR VPN
+==================
+
+ipsec down REMOTE-SSH
+
+Resultado esperado:
+
+La conexión REMOTE-SSH queda desconectada.
+
+
+9. PROBAR SSH SIN VPN
+=====================
+
+Con la VPN desconectada ejecutar:
+
+ssh sshuser@10.24.96.130
+
+Resultado esperado:
+
+La conexión SSH debe fallar.
+
+
+10. COMPROBAR HTTPS SIN VPN
+===========================
+
+Con la VPN desconectada ejecutar nuevamente:
+
+curl -k https://198.51.100.98/
+
+Resultado esperado:
+
+El servicio HTTPS debe continuar funcionando.
+
+
+RESUMEN DE FUNCIONAMIENTO
+=========================
+
+SIN VPN
+-------
+
+HTTPS:
+FUNCIONA
+
+SSH:
+NO FUNCIONA
+
+
+CON VPN
+-------
+
+HTTPS:
+FUNCIONA
+
+SSH:
+FUNCIONA
+
+
+SERVIDOR WEB
+============
+
+IP privada:
+
+10.24.96.130/28
+
+Gateway:
+
+10.24.96.129
+
+Servicios:
+
+HTTPS - TCP 443
+
+SSH - TCP 22
+
+
+USER-PC
+=======
+
+Red local:
+
+10.24.96.0/25
+
+Gateway:
+
+10.24.96.1
+
+IP virtual VPN durante las pruebas:
+
+10.24.97.10
+
+
+FORTIGATE
+=========
+
+IP publica:
+
+198.51.100.98
+
+VPN:
+
+REMOTE-SSH
+
+Tipo:
+
+Remote Access IPsec
+
+
+OBJETIVO FINAL
+==============
+
+El usuario puede acceder al servicio HTTPS sin necesidad
+de conectarse a la VPN.
+
+Para acceder mediante SSH al servidor privado,
+el usuario debe establecer primero la VPN Remote Access.
+
+Esto permite mantener el servicio web disponible
+externamente mientras el acceso administrativo por SSH
+permanece protegido mediante la VPN.
