@@ -6,7 +6,7 @@ Laboratorio de VPN Remote Access con FortiGate en GNS3, acceso HTTPS al servidor
 
 Video del funcionamiento completo del laboratorio:
 
-[Colocar aquí el enlace del video]
+https://youtu.be/zSZO28Cchb4
 
 ---
 
