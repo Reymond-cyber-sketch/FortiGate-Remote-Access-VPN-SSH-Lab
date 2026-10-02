@@ -1,0 +1,224 @@
+MIKROTIK - ISP
+==============
+
+IDENTIDAD
+
+Nombre del equipo:
+ISP
+
+
+FUNCION
+
+Este MikroTik simula el proveedor de Internet entre:
+
+- USER-ROUTER
+- FGT-USER
+- Nodo NAT de GNS3
+
+Su función es enrutar el tráfico entre las redes públicas
+utilizadas en el laboratorio y proporcionar salida a Internet.
+
+
+INTERFACES
+==========
+
+HACIA FGT-USER
+
+Interface:
+ether7
+
+IP:
+198.51.100.97/30
+
+
+HACIA USER-ROUTER
+
+Interface:
+ether8
+
+IP:
+203.0.113.97/30
+
+
+HACIA INTERNET / GNS3 NAT
+
+Interface:
+ether10
+
+Configuración:
+DHCP Client
+
+
+RED PUBLICA ENTRE ISP Y FGT-USER
+================================
+
+Red:
+198.51.100.96/30
+
+ISP:
+198.51.100.97
+
+FGT-USER:
+198.51.100.98
+
+
+RED PUBLICA ENTRE ISP Y USER-ROUTER
+===================================
+
+Red:
+203.0.113.96/30
+
+ISP:
+203.0.113.97
+
+USER-ROUTER:
+203.0.113.98
+
+
+SALIDA A INTERNET
+=================
+
+La interface ether10 obtiene una dirección IP mediante DHCP
+desde el nodo NAT de GNS3.
+
+Durante el laboratorio se utilizó una dirección de la red:
+
+192.168.42.0/24
+
+Gateway del nodo NAT:
+
+192.168.42.1
+
+
+NAT
+===
+
+El ISP utiliza NAT masquerade hacia la interface conectada
+al nodo NAT de GNS3.
+
+Interface de salida:
+
+ether10
+
+Acción:
+
+masquerade
+
+
+FUNCIONAMIENTO DEL TRAFICO
+==========================
+
+El tráfico del USER-PC sigue esta ruta:
+
+USER-PC
+|
+SW-LAB
+|
+USER-ROUTER
+|
+ISP
+|
+FGT-USER
+
+
+El ISP permite la comunicación entre:
+
+USER-ROUTER
+203.0.113.98
+
+y
+
+FGT-USER
+198.51.100.98
+
+
+VPN REMOTE ACCESS
+=================
+
+El túnel VPN Remote Access se establece entre:
+
+USER-PC
+
+y
+
+FGT-USER
+198.51.100.98
+
+
+El ISP solamente transporta el tráfico IPsec entre ambos extremos.
+
+El túnel utiliza NAT-T debido a que USER-PC se encuentra
+detrás del USER-ROUTER.
+
+
+ACCESO HTTPS
+============
+
+El USER-PC puede acceder sin VPN a:
+
+https://198.51.100.98
+
+El tráfico atraviesa:
+
+USER-PC
+|
+USER-ROUTER
+|
+ISP
+|
+FGT-USER
+|
+WEB-SERVER
+
+
+ACCESO SSH
+==========
+
+Para acceder por SSH a:
+
+10.24.96.130
+
+el USER-PC debe establecer primero la VPN Remote Access
+hacia el FortiGate.
+
+
+COMANDOS PRINCIPALES UTILIZADOS
+===============================
+
+/ip address add address=198.51.100.97/30 \
+interface=ether7 \
+comment="WAN hacia FGT-USER"
+
+
+/ip address add address=203.0.113.97/30 \
+interface=ether8 \
+comment="WAN hacia USER-ROUTER"
+
+
+/ip dhcp-client add \
+interface=ether10 \
+add-default-route=yes \
+use-peer-dns=yes \
+disabled=no
+
+
+/ip firewall nat add \
+chain=srcnat \
+out-interface=ether10 \
+action=masquerade
+
+
+RESULTADO
+=========
+
+ENRUTAMIENTO ENTRE USER-ROUTER Y FGT-USER:
+FUNCIONA
+
+SALIDA A INTERNET:
+FUNCIONA
+
+TRANSPORTE HTTPS:
+FUNCIONA
+
+TRANSPORTE VPN IPSEC:
+FUNCIONA
