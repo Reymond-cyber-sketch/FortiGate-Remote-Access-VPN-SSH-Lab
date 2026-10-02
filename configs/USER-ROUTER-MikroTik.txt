@@ -1,0 +1,223 @@
+MIKROTIK - USER-ROUTER
+======================
+
+IDENTIDAD
+
+Nombre del equipo:
+USER-ROUTER
+
+
+FUNCION
+
+Este MikroTik funciona como router de la red de usuarios.
+
+Su función principal es:
+
+- Servir como gateway de la VLAN 10.
+- Entregar direcciones IP por DHCP.
+- Proporcionar salida a Internet mediante NAT.
+- Permitir que el USER-PC llegue hasta la IP publica del FortiGate.
+- Permitir que el USER-PC establezca la VPN Remote Access contra el FortiGate.
+
+
+INTERFACES
+==========
+
+WAN - ether1
+
+IP:
+203.0.113.98/30
+
+Gateway:
+203.0.113.97
+
+
+LAN USERS - ether2
+
+IP:
+10.24.96.1/25
+
+
+RED DE USUARIOS
+===============
+
+Red:
+10.24.96.0/25
+
+Gateway:
+10.24.96.1
+
+VLAN:
+10
+
+
+DHCP
+====
+
+Pool:
+POOL-USERS
+
+Rango:
+10.24.96.10 - 10.24.96.120
+
+Gateway:
+10.24.96.1
+
+DNS:
+8.8.8.8
+1.1.1.1
+
+Lease Time:
+1 hora
+
+
+RUTA POR DEFECTO
+================
+
+Destino:
+0.0.0.0/0
+
+Gateway:
+203.0.113.97
+
+
+NAT
+===
+
+La red de usuarios utiliza NAT para salir hacia Internet.
+
+Origen:
+10.24.96.0/25
+
+Interface de salida:
+ether1
+
+Accion:
+masquerade
+
+
+VPN REMOTE ACCESS
+=================
+
+El USER-ROUTER no termina el tunel VPN.
+
+Su funcion es transportar el trafico del USER-PC hacia
+la IP publica del FortiGate:
+
+198.51.100.98
+
+El cliente VPN se ejecuta directamente en USER-PC.
+
+Cuando la VPN esta activa, USER-PC recibe una direccion
+virtual del FortiGate.
+
+Durante las pruebas se utilizo:
+
+10.24.97.10
+
+
+COMANDOS PRINCIPALES UTILIZADOS
+===============================
+
+/system identity set name=USER-ROUTER
+
+
+/ip address add address=10.24.96.1/25 interface=ether2 comment="LAN USERS"
+
+
+/ip firewall nat add chain=srcnat \
+src-address=10.24.96.0/25 \
+out-interface=ether1 \
+action=masquerade \
+comment="NAT USERS hacia Internet"
+
+
+/ip pool add name=POOL-USERS \
+ranges=10.24.96.10-10.24.96.120
+
+
+/ip dhcp-server add \
+name=DHCP-USERS \
+interface=ether2 \
+address-pool=POOL-USERS \
+lease-time=1h \
+disabled=no
+
+
+/ip dhcp-server network add \
+address=10.24.96.0/25 \
+gateway=10.24.96.1 \
+dns-server=8.8.8.8,1.1.1.1
+
+
+/ip dns set \
+servers=8.8.8.8,1.1.1.1 \
+allow-remote-requests=yes
+
+
+/ip route add \
+dst-address=0.0.0.0/0 \
+gateway=203.0.113.97
+
+
+FUNCIONAMIENTO GENERAL
+======================
+
+USER-PC obtiene una direccion IP mediante DHCP.
+
+Ejemplo utilizado durante las pruebas:
+
+10.24.96.11/25
+
+El trafico sigue la ruta:
+
+USER-PC
+|
+SW-LAB
+|
+USER-ROUTER
+|
+ISP
+|
+FGT-USER
+
+
+ACCESO HTTPS
+============
+
+El USER-PC puede acceder al servidor web sin VPN mediante:
+
+https://198.51.100.98
+
+El FortiGate redirige el puerto 443 hacia:
+
+10.24.96.130
+
+
+ACCESO SSH
+==========
+
+El USER-PC debe conectarse primero a la VPN Remote Access.
+
+Despues de establecer la VPN puede conectarse mediante SSH a:
+
+10.24.96.130
+
+
+RESULTADO
+=========
+
+DHCP:
+FUNCIONA
+
+NAT:
+FUNCIONA
+
+INTERNET:
+FUNCIONA
+
+HTTPS SIN VPN:
+FUNCIONA
+
+TRANSPORTE DE VPN REMOTE ACCESS:
+FUNCIONA
